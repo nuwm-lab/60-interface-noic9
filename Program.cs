@@ -1,7 +1,6 @@
 using System;
-using System. Collections.Generic;
-using System. Globalization;
-using System.Linq;
+using System.Collections.Generic;
+using System.Globalization;
 
 namespace GeometryApp
 {
@@ -120,6 +119,11 @@ namespace GeometryApp
         /// </summary>
         public static int TotalInstancesCreated => _instanceCounter;
 
+        /// <summary>
+        /// Перевірка чи об'єкт був звільнений
+        /// </summary>
+        public bool IsDisposed => _disposed;
+
         #endregion
 
         #region Конструктори та Dispose
@@ -159,7 +163,7 @@ namespace GeometryApp
                     // Звільнення керованих ресурсів
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.WriteLine($"[Dispose] Звільнено ресурси {GetType().Name} #{_objectId}");
-                    Console.ResetColor();
+                    Console. ResetColor();
                 }
 
                 _disposed = true;
@@ -171,7 +175,7 @@ namespace GeometryApp
         /// </summary>
         ~GeometricObject()
         {
-            if (! _disposed)
+            if (!_disposed)
             {
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                 Console.WriteLine($"[Фіналізатор] ПОПЕРЕДЖЕННЯ: {GetType().Name} #{_objectId} не був явно звільнений!");
@@ -220,6 +224,17 @@ namespace GeometryApp
             {
                 throw new ArgumentException(
                     $"Для {GetObjectType()} потрібно рівно {expectedDimension} координат.  Надано: {point.Length}");
+            }
+        }
+
+        /// <summary>
+        /// Перевірка чи об'єкт не був звільнений
+        /// </summary>
+        protected void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name, $"Об'єкт #{_objectId} вже був звільнений");
             }
         }
 
@@ -314,6 +329,8 @@ namespace GeometryApp
 
         public override void SetCoefficients(params double[] coefficients)
         {
+            ThrowIfDisposed();
+
             if (coefficients == null)
                 throw new ArgumentNullException(nameof(coefficients));
 
@@ -334,11 +351,14 @@ namespace GeometryApp
 
         public override double[] GetCoefficients()
         {
+            ThrowIfDisposed();
             return new double[] { A0, A1, A2 };
         }
 
         public override void PrintCoefficients()
         {
+            ThrowIfDisposed();
+
             Console.WriteLine("╔═══════════════════════════════════════════════════════════╗");
             Console.WriteLine($"║                    ПРЯМА #{ObjectId}                          ║");
             Console.WriteLine("╚═══════════════════════════════════════════════════════════╝");
@@ -348,13 +368,17 @@ namespace GeometryApp
 
         public override bool ContainsPoint(params double[] point)
         {
+            ThrowIfDisposed();
             ValidatePointDimension(point, 2);
+
             double result = A1 * point[0] + A2 * point[1] + A0;
             return Math.Abs(result) < EpsilonValue;
         }
 
         public override double DistanceToPoint(params double[] point)
         {
+            ThrowIfDisposed();
+
             if (! IsValid())
                 throw new InvalidOperationException(GetValidationMessage());
 
@@ -380,6 +404,8 @@ namespace GeometryApp
 
         public override void PrintInfo()
         {
+            ThrowIfDisposed();
+
             Console.WriteLine($"┌─ Тип: {GetObjectType()} (ID: {ObjectId})");
             Console.WriteLine($"│  Рівняння: ({A1})*x + ({A2})*y + ({A0}) = 0");
             Console.WriteLine($"│  Розмірність: {GetDimension()}D");
@@ -392,34 +418,30 @@ namespace GeometryApp
 
         public override GeometricObject Clone()
         {
+            ThrowIfDisposed();
             return new Pryama(this);
         }
 
-        /// <summary>
-        /// Покращена логіка порівняння на подібність
-        /// Дві прямі подібні, якщо їх коефіцієнти пропорційні
-        /// </summary>
         public override bool IsSimilar(GeometricObject other)
         {
+            ThrowIfDisposed();
+
             if (other is Pryama pryama)
             {
                 double[] thisCoeffs = GetCoefficients();
                 double[] otherCoeffs = pryama.GetCoefficients();
 
-                // Знаходимо перший ненульовий коефіцієнт як базу
                 double ratio = 0;
                 bool ratioFound = false;
 
-                for (int i = 0; i < thisCoeffs. Length; i++)
+                for (int i = 0; i < thisCoeffs.Length; i++)
                 {
                     bool thisNonZero = Math.Abs(thisCoeffs[i]) > EpsilonValue;
                     bool otherNonZero = Math.Abs(otherCoeffs[i]) > EpsilonValue;
 
-                    // Якщо один нульовий, а інший ні - не подібні
                     if (thisNonZero != otherNonZero)
                         return false;
 
-                    // Якщо обидва ненульові
                     if (thisNonZero && otherNonZero)
                     {
                         double currentRatio = thisCoeffs[i] / otherCoeffs[i];
@@ -431,7 +453,6 @@ namespace GeometryApp
                         }
                         else
                         {
-                            // Перевіряємо чи співпадає пропорція
                             if (Math.Abs(ratio - currentRatio) > EpsilonValue)
                                 return false;
                         }
@@ -457,6 +478,7 @@ namespace GeometryApp
 
     /// <summary>
     /// Клас для гіперплощини у 4-вимірному просторі
+    /// Рівняння: a1*x1 + a2*x2 + a3*x3 + a4*x4 + a0 = 0
     /// </summary>
     public class Giperploschyna : Pryama
     {
@@ -520,6 +542,8 @@ namespace GeometryApp
 
         public override void SetCoefficients(params double[] coefficients)
         {
+            ThrowIfDisposed();
+
             if (coefficients == null)
                 throw new ArgumentNullException(nameof(coefficients));
 
@@ -542,11 +566,14 @@ namespace GeometryApp
 
         public override double[] GetCoefficients()
         {
+            ThrowIfDisposed();
             return new double[] { A0, A1, A2, A3, A4 };
         }
 
         public override void PrintCoefficients()
         {
+            ThrowIfDisposed();
+
             Console.WriteLine("╔═══════════════════════════════════════════════════════════╗");
             Console. WriteLine($"║                ГІПЕРПЛОЩИНА #{ObjectId}                      ║");
             Console.WriteLine("╚═══════════════════════════════════════════════════════════╝");
@@ -556,14 +583,18 @@ namespace GeometryApp
 
         public override bool ContainsPoint(params double[] point)
         {
+            ThrowIfDisposed();
             ValidatePointDimension(point, 4);
+
             double result = A1 * point[0] + A2 * point[1] + A3 * point[2] + A4 * point[3] + A0;
             return Math.Abs(result) < EpsilonValue;
         }
 
         public override double DistanceToPoint(params double[] point)
         {
-            if (!IsValid())
+            ThrowIfDisposed();
+
+            if (! IsValid())
                 throw new InvalidOperationException(GetValidationMessage());
 
             ValidatePointDimension(point, 4);
@@ -576,23 +607,25 @@ namespace GeometryApp
 
         public override bool IsValid()
         {
-            return Math. Abs(A1) > EpsilonValue || Math. Abs(A2) > EpsilonValue ||
-                   Math.Abs(A3) > EpsilonValue || Math.Abs(A4) > EpsilonValue;
+            return Math. Abs(A1) > EpsilonValue || Math.Abs(A2) > EpsilonValue ||
+                   Math. Abs(A3) > EpsilonValue || Math. Abs(A4) > EpsilonValue;
         }
 
         public override string GetValidationMessage()
         {
-            if (!IsValid())
+            if (! IsValid())
                 return "Гіперплощина невалідна: всі коефіцієнти a1, a2, a3, a4 не можуть бути одночасно нульовими";
             return "Гіперплощина валідна";
         }
 
         public override void PrintInfo()
         {
+            ThrowIfDisposed();
+
             Console.WriteLine($"┌─ Тип: {GetObjectType()} (ID: {ObjectId})");
             Console.WriteLine($"│  Рівняння: ({A1})*x1 + ({A2})*x2 + ({A3})*x3 + ({A4})*x4 + ({A0}) = 0");
             Console.WriteLine($"│  Розмірність: {GetDimension()}D");
-            Console.WriteLine($"└─ Статус: {(IsValid() ? "✓ Валідний" : "✗ Невалідний")}");
+            Console. WriteLine($"└─ Статус: {(IsValid() ?  "✓ Валідний" : "✗ Невалідний")}");
         }
 
         public override int GetDimension() => 4;
@@ -601,11 +634,14 @@ namespace GeometryApp
 
         public override GeometricObject Clone()
         {
+            ThrowIfDisposed();
             return new Giperploschyna(this);
         }
 
         public override bool IsSimilar(GeometricObject other)
         {
+            ThrowIfDisposed();
+
             if (other is Giperploschyna giper)
             {
                 double[] thisCoeffs = GetCoefficients();
@@ -654,236 +690,12 @@ namespace GeometryApp
 
     #endregion
 
-    #region Тестування
-
-    /// <summary>
-    /// Клас для автоматичного тестування
-    /// </summary>
-    public static class GeometryTests
-    {
-        public static void RunAllTests()
-        {
-            Console.WriteLine($"\n{UiConstants.BoxTop}");
-            Console.WriteLine("║                   ЮНІТ-ТЕСТИ                              ║");
-            Console.WriteLine($"{UiConstants.BoxBottom}\n");
-
-            int passed = 0;
-            int failed = 0;
-
-            // Тест 1: ContainsPoint для прямої
-            try
-            {
-                Pryama p = new Pryama(0, 1, 1); // x + y = 0
-                bool result = p.ContainsPoint(1, -1);
-                if (result)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("✓ Тест 1 PASSED: ContainsPoint для прямої");
-                    passed++;
-                }
-                else
-                {
-                    throw new Exception("Точка (1, -1) має належати прямій x + y = 0");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"✗ Тест 1 FAILED: {ex.Message}");
-                failed++;
-            }
-            finally
-            {
-                Console.ResetColor();
-            }
-
-            // Тест 2: DistanceToPoint для прямої
-            try
-            {
-                Pryama p = new Pryama(0, 1, 0); // x = 0 (вісь Y)
-                double distance = p.DistanceToPoint(5, 0);
-                if (Math.Abs(distance - 5) < 1e-10)
-                {
-                    Console. ForegroundColor = ConsoleColor.Green;
-                    Console. WriteLine("✓ Тест 2 PASSED: DistanceToPoint для прямої");
-                    passed++;
-                }
-                else
-                {
-                    throw new Exception($"Очікувана відстань 5, отримано {distance}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console. ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"✗ Тест 2 FAILED: {ex.Message}");
-                failed++;
-            }
-            finally
-            {
-                Console.ResetColor();
-            }
-
-            // Тест 3: IsSimilar для подібних прямих
-            try
-            {
-                Pryama p1 = new Pryama(1, 2, 3);
-                Pryama p2 = new Pryama(2, 4, 6); // Коефіцієнти * 2
-                if (p1.IsSimilar(p2))
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("✓ Тест 3 PASSED: IsSimilar для подібних прямих");
-                    passed++;
-                }
-                else
-                {
-                    throw new Exception("Прямі мають бути подібними");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console. WriteLine($"✗ Тест 3 FAILED: {ex.Message}");
-                failed++;
-            }
-            finally
-            {
-                Console.ResetColor();
-            }
-
-            // Тест 4: IsSimilar для неподібних прямих
-            try
-            {
-                Pryama p1 = new Pryama(1, 2, 3);
-                Pryama p2 = new Pryama(1, 1, 1);
-                if (!p1.IsSimilar(p2))
-                {
-                    Console.ForegroundColor = ConsoleColor. Green;
-                    Console.WriteLine("✓ Тест 4 PASSED: IsSimilar для неподібних прямих");
-                    passed++;
-                }
-                else
-                {
-                    throw new Exception("Прямі не повинні бути подібними");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"✗ Тест 4 FAILED: {ex.Message}");
-                failed++;
-            }
-            finally
-            {
-                Console.ResetColor();
-            }
-
-            // Тест 5: Крайовий випадок - нульові коефіцієнти
-            try
-            {
-                Pryama p1 = new Pryama(0, 1, 0); // x = 0
-                Pryama p2 = new Pryama(0, 2, 0); // x = 0 (подібна)
-                if (p1.IsSimilar(p2))
-                {
-                    Console.ForegroundColor = ConsoleColor. Green;
-                    Console.WriteLine("✓ Тест 5 PASSED: IsSimilar з нульовими коефіцієнтами");
-                    passed++;
-                }
-                else
-                {
-                    throw new Exception("Прямі з нульовими a0 та a2 мають бути подібними");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"✗ Тест 5 FAILED: {ex.Message}");
-                failed++;
-            }
-            finally
-            {
-                Console. ResetColor();
-            }
-
-            // Тест 6: ContainsPoint для гіперплощини
-            try
-            {
-                Giperploschyna g = new Giperploschyna(0, 1, 1, 1, 1); // x1 + x2 + x3 + x4 = 0
-                bool result = g.ContainsPoint(1, -1, 0, 0);
-                if (result)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("✓ Тест 6 PASSED: ContainsPoint для гіперплощини");
-                    passed++;
-                }
-                else
-                {
-                    throw new Exception("Точка має належати гіперплощині");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"✗ Тест 6 FAILED: {ex.Message}");
-                failed++;
-            }
-            finally
-            {
-                Console.ResetColor();
-            }
-
-            // Тест 7: Клонування
-            try
-            {
-                Pryama original = new Pryama(1, 2, 3);
-                Pryama clone = (Pryama)original.Clone();
-
-                if (clone.A0 == original.A0 && clone. A1 == original.A1 && clone.A2 == original.A2)
-                {
-                    original.SetCoefficients(10, 20, 30);
-                    if (clone.A0 == 1 && clone.A1 == 2 && clone.A2 == 3)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("✓ Тест 7 PASSED: Глибоке клонування");
-                        passed++;
-                    }
-                    else
-                    {
-                        throw new Exception("Клон змінився разом з оригіналом");
-                    }
-                }
-                else
-                {
-                    throw new Exception("Клон має інші значення");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"✗ Тест 7 FAILED: {ex.Message}");
-                failed++;
-            }
-            finally
-            {
-                Console.ResetColor();
-            }
-
-            // Підсумок
-            Console.WriteLine($"\n{UiConstants. Separator}");
-            Console.WriteLine($"Результати тестування:");
-            Console.ForegroundColor = ConsoleColor. Green;
-            Console.WriteLine($"  Пройдено: {passed}");
-            Console. ForegroundColor = ConsoleColor. Red;
-            Console.WriteLine($"  Провалено: {failed}");
-            Console.ResetColor();
-            Console.WriteLine($"  Загалом: {passed + failed}");
-        }
-    }
-
-    #endregion
-
     #region Менеджер геометрії
 
+    /// <summary>
+    /// Клас для управління колекцією геометричних об'єктів
+    /// Менеджер є власником об'єктів і відповідає за їх звільнення
+    /// </summary>
     public class GeometryManager : IDisposable
     {
         private List<GeometricObject> _objects;
@@ -897,20 +709,43 @@ namespace GeometryApp
             Console. ResetColor();
         }
 
+        /// <summary>
+        /// Додавання об'єкта до колекції
+        /// Менеджер стає власником об'єкта
+        /// </summary>
         public void AddObject(GeometricObject obj)
         {
-            if (obj != null)
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(GeometryManager));
+
+            if (obj == null)
             {
-                _objects.Add(obj);
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"✓ Додано: {obj}");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("✗ Помилка: не можна додати null об'єкт");
                 Console.ResetColor();
+                return;
             }
+
+            if (obj.IsDisposed)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Помилка: не можна додати звільнений об'єкт {obj}");
+                Console.ResetColor();
+                return;
+            }
+
+            _objects.Add(obj);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"✓ Додано: {obj}");
+            Console.ResetColor();
         }
 
         public void PrintAllObjects()
         {
-            Console.WriteLine($"\n{UiConstants.BoxTop}");
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(GeometryManager));
+
+            Console. WriteLine($"\n{UiConstants.BoxTop}");
             Console.WriteLine("║          СПИСОК ВСІХ ОБ'ЄКТІВ                             ║");
             Console.WriteLine($"{UiConstants.BoxBottom}\n");
 
@@ -928,13 +763,24 @@ namespace GeometryApp
 
         public void DemonstrateInterfaces()
         {
-            Console.WriteLine($"\n{UiConstants.BoxTop}");
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(GeometryManager));
+
+            Console. WriteLine($"\n{UiConstants.BoxTop}");
             Console.WriteLine("║         ДЕМОНСТРАЦІЯ РОБОТИ ІНТЕРФЕЙСІВ                   ║");
             Console.WriteLine($"{UiConstants.BoxBottom}\n");
 
             foreach (var obj in _objects)
             {
-                Console.WriteLine($"\n{UiConstants.Separator}");
+                if (obj. IsDisposed)
+                {
+                    Console.ForegroundColor = ConsoleColor. Red;
+                    Console.WriteLine($"⚠ Пропущено звільнений об'єкт: {obj}");
+                    Console.ResetColor();
+                    continue;
+                }
+
+                Console.WriteLine($"\n{UiConstants. Separator}");
                 Console.WriteLine($"Об'єкт: {obj}\n");
 
                 if (obj is IValidatable validatable)
@@ -976,28 +822,40 @@ namespace GeometryApp
                 if (obj is IGeometryCloneable cloneable)
                 {
                     Console.WriteLine($"\n🔄 IGeometryCloneable:");
-                    GeometricObject clone = cloneable.Clone();
-                    Console. WriteLine($"   Оригінал: {obj}");
+                    GeometricObject clone = cloneable. Clone();
+                    Console.WriteLine($"   Оригінал: {obj}");
                     Console.WriteLine($"   Клон: {clone}");
-                    Console. WriteLine($"   Клон створено успішно!");
+                    Console.WriteLine($"   Клон створено успішно!");
+                    clone. Dispose();
                 }
             }
         }
 
         public void CheckPointForAll(double[] point)
         {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(GeometryManager));
+
             Console.WriteLine($"\n{UiConstants.BoxTop}");
             Console.WriteLine($"║  ПЕРЕВІРКА ТОЧКИ ({string.Join(", ", point)})");
             Console.WriteLine($"{UiConstants.BoxBottom}\n");
 
             foreach (var obj in _objects)
             {
+                if (obj.IsDisposed)
+                {
+                    Console.ForegroundColor = ConsoleColor. Red;
+                    Console.WriteLine($"⚠ Пропущено звільнений об'єкт: {obj}");
+                    Console.ResetColor();
+                    continue;
+                }
+
                 int requiredDim = obj.GetDimension();
                 if (point.Length != requiredDim)
                 {
-                    Console.ForegroundColor = ConsoleColor. Red;
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"{obj. GetObjectType()}: Невідповідна розмірність (потрібно {requiredDim}D)");
-                    Console.ResetColor();
+                    Console. ResetColor();
                     continue;
                 }
 
@@ -1037,7 +895,7 @@ namespace GeometryApp
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.WriteLine($"[Dispose] Звільнення ресурсів GeometryManager");
 
-                    // Явно звільняємо всі об'єкти
+                    // Менеджер звільняє всі свої об'єкти
                     foreach (var obj in _objects)
                     {
                         obj?. Dispose();
@@ -1064,8 +922,11 @@ namespace GeometryApp
 
     #endregion
 
-    #region UI та Input
+    #region UI Constants
 
+    /// <summary>
+    /// Константи для елементів користувацького інтерфейсу
+    /// </summary>
     public static class UiConstants
     {
         public const string BoxTop = "╔═══════════════════════════════════════════════════════════╗";
@@ -1075,13 +936,20 @@ namespace GeometryApp
         public const string SectionBottom = "└─────────────────────────────────────────────────────────┘";
     }
 
+    #endregion
+
+    #region Input Helper
+
+    /// <summary>
+    /// Допоміжний клас для введення даних від користувача
+    /// </summary>
     public static class InputHelper
     {
         public static double ReadDouble(string prompt)
         {
             while (true)
             {
-                Console.Write(prompt);
+                Console. Write(prompt);
                 if (double.TryParse(Console.ReadLine(), NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
                     return result;
 
@@ -1159,13 +1027,157 @@ namespace GeometryApp
 
     #endregion
 
-    #region Головна програма
+    #region Tests
+
+    /// <summary>
+    /// Клас для автоматичного тестування
+    /// </summary>
+    public static class GeometryTests
+    {
+        public static void RunAllTests()
+        {
+            Console.WriteLine($"\n{UiConstants.BoxTop}");
+            Console.WriteLine("║                   ЮНІТ-ТЕСТИ                              ║");
+            Console.WriteLine($"{UiConstants.BoxBottom}\n");
+
+            int passed = 0;
+            int failed = 0;
+
+            // Тест 1: ContainsPoint для прямої
+            RunTest(ref passed, ref failed, "ContainsPoint для прямої", () =>
+            {
+                using (Pryama p = new Pryama(0, 1, 1))
+                {
+                    if (! p.ContainsPoint(1, -1))
+                        throw new Exception("Точка (1, -1) має належати прямій x + y = 0");
+                }
+            });
+
+            // Тест 2: DistanceToPoint для прямої
+            RunTest(ref passed, ref failed, "DistanceToPoint для прямої", () =>
+            {
+                using (Pryama p = new Pryama(0, 1, 0))
+                {
+                    double distance = p.DistanceToPoint(5, 0);
+                    if (Math. Abs(distance - 5) >= 1e-10)
+                        throw new Exception($"Очікувана відстань 5, отримано {distance}");
+                }
+            });
+
+            // Тест 3: IsSimilar для подібних прямих
+            RunTest(ref passed, ref failed, "IsSimilar для подібних прямих", () =>
+            {
+                using (Pryama p1 = new Pryama(1, 2, 3))
+                using (Pryama p2 = new Pryama(2, 4, 6))
+                {
+                    if (!p1.IsSimilar(p2))
+                        throw new Exception("Прямі мають бути подібними");
+                }
+            });
+
+            // Тест 4: Перевірка на null і disposed об'єкти в менеджері
+            RunTest(ref passed, ref failed, "GeometryManager з null і disposed об'єктами", () =>
+            {
+                using (GeometryManager manager = new GeometryManager())
+                {
+                    // Додаємо null - має відхилити
+                    manager. AddObject(null);
+
+                    // Створюємо об'єкт і звільняємо його
+                    Pryama disposedObj = new Pryama(1, 2, 3);
+                    disposedObj. Dispose();
+
+                    // Намагаємося додати звільнений об'єкт - має відхилити
+                    manager. AddObject(disposedObj);
+
+                    // Перевіряємо що менеджер порожній
+                    if (manager.GetObjectCount() != 0)
+                        throw new Exception("Менеджер не повинен містити null або disposed об'єкти");
+                }
+            });
+
+            // Тест 5: Робота з об'єктами без using в менеджері
+            RunTest(ref passed, ref failed, "Менеджер без using при створенні об'єктів", () =>
+            {
+                using (GeometryManager testManager = new GeometryManager())
+                {
+                    // Створюємо об'єкти БЕЗ using - менеджер стає власником
+                    GeometricObject pryama = new Pryama(1, 2, 3);
+                    GeometricObject giper = new Giperploschyna(1, 1, 1, 1, 1);
+
+                    testManager.AddObject(pryama);
+                    testManager.AddObject(giper);
+
+                    // Викликаємо методи - має працювати
+                    testManager. DemonstrateInterfaces();
+
+                    if (testManager.GetObjectCount() != 2)
+                        throw new Exception("Має бути 2 об'єкти в менеджері");
+                }
+                // Менеджер автоматично звільнить об'єкти при Dispose
+            });
+
+            // Тест 6: Доступ до звільненого об'єкта
+            RunTest(ref passed, ref failed, "Виняток при доступі до disposed об'єкта", () =>
+            {
+                Pryama p = new Pryama(1, 2, 3);
+                p.Dispose();
+
+                try
+                {
+                    p. GetCoefficients();
+                    throw new Exception("Має кинути ObjectDisposedException");
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Очікуваний виняток
+                }
+            });
+
+            // Підсумок
+            Console.WriteLine($"\n{UiConstants. Separator}");
+            Console.WriteLine($"Результати тестування:");
+            Console.ForegroundColor = ConsoleColor. Green;
+            Console.WriteLine($"  Пройдено: {passed}");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"  Провалено: {failed}");
+            Console.ResetColor();
+            Console.WriteLine($"  Загалом: {passed + failed}");
+            Console.WriteLine($"  Успішність: {(passed * 100. 0 / (passed + failed)):F1}%");
+        }
+
+        private static void RunTest(ref int passed, ref int failed, string testName, Action testAction)
+        {
+            try
+            {
+                testAction();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console. WriteLine($"✓ Тест PASSED: {testName}");
+                passed++;
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Тест FAILED: {testName}");
+                Console.WriteLine($"  Причина: {ex.Message}");
+                failed++;
+            }
+            finally
+            {
+                Console.ResetColor();
+            }
+        }
+    }
+
+    #endregion
+
+    #region Program
 
     public class Program
     {
         static void Main(string[] args)
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.OutputEncoding = System.Text. Encoding.UTF8;
 
             PrintHeader();
 
@@ -1176,7 +1188,7 @@ namespace GeometryApp
             {
                 using (GeometryManager manager = new GeometryManager())
                 {
-                    Console.WriteLine($"\n{UiConstants. SectionTop}");
+                    Console.WriteLine($"\n{UiConstants.SectionTop}");
                     Console.WriteLine("│ ЕТАП 1: Створення об'єктів (Конструктори)               │");
                     Console.WriteLine($"{UiConstants.SectionBottom}\n");
 
@@ -1206,12 +1218,11 @@ namespace GeometryApp
 
                     DemonstrateEncapsulation();
                 }
-                // using автоматично викличе Dispose для manager
             }
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console. WriteLine($"\n❌ Критична помилка: {ex. Message}");
+                Console.WriteLine($"\n❌ Критична помилка: {ex. Message}");
                 Console.WriteLine($"Деталі: {ex.StackTrace}");
                 Console.ResetColor();
             }
@@ -1240,21 +1251,18 @@ namespace GeometryApp
 
         static void CreateObjects(GeometryManager manager)
         {
+            // БЕЗ using - менеджер стає власником об'єктів
             Console.WriteLine("🔹 Створення Пряма (2D):");
-            using (GeometricObject pryama = new Pryama())
-            {
-                double[] coeffPryama = InputHelper.ReadCoefficients(3, "прямої");
-                pryama.SetCoefficients(coeffPryama);
-                manager.AddObject(pryama);
-            }
+            GeometricObject pryama = new Pryama();
+            double[] coeffPryama = InputHelper.ReadCoefficients(3, "прямої");
+            pryama.SetCoefficients(coeffPryama);
+            manager.AddObject(pryama);
 
-            Console.WriteLine("\n🔹 Створення Гіперплощина (4D):");
-            using (GeometricObject giper = new Giperploschyna())
-            {
-                double[] coeffGiper = InputHelper.ReadCoefficients(5, "гіперплощини");
-                giper.SetCoefficients(coeffGiper);
-                manager.AddObject(giper);
-            }
+            Console. WriteLine("\n🔹 Створення Гіперплощина (4D):");
+            GeometricObject giper = new Giperploschyna();
+            double[] coeffGiper = InputHelper.ReadCoefficients(5, "гіперплощини");
+            giper.SetCoefficients(coeffGiper);
+            manager.AddObject(giper);
         }
 
         static void CheckPointsLoop(GeometryManager manager)
@@ -1274,10 +1282,10 @@ namespace GeometryApp
 
         static void ShowStatistics(GeometryManager manager)
         {
-            Console.WriteLine($"📊 Статистика:");
-            Console.WriteLine($"   Всього об'єктів у менеджері: {manager.GetObjectCount()}");
-            Console. WriteLine($"   Всього створено екземплярів: {GeometricObject.TotalInstancesCreated}");
-            Console. WriteLine($"   Реалізовано інтерфейсів: 5");
+            Console. WriteLine($"📊 Статистика:");
+            Console.WriteLine($"   Всього об'єктів у менеджері: {manager. GetObjectCount()}");
+            Console.WriteLine($"   Всього створено екземплярів: {GeometricObject.TotalInstancesCreated}");
+            Console.WriteLine($"   Реалізовано інтерфейсів: 5");
             Console.WriteLine($"   • IDistanceCalculable");
             Console.WriteLine($"   • IValidatable");
             Console.WriteLine($"   • ICoefficientsManageable");
@@ -1304,7 +1312,7 @@ namespace GeometryApp
                 Console.WriteLine("\n3. Readonly властивість ObjectId:");
                 Console.WriteLine($"   ObjectId = {p.ObjectId} (тільки для читання)");
 
-                Console.WriteLine("\n4. Static властивість TotalInstancesCreated:");
+                Console.WriteLine("\n4.  Static властивість TotalInstancesCreated:");
                 Console.WriteLine($"   Всього створено: {GeometricObject.TotalInstancesCreated}");
 
                 Console.WriteLine("\n✓ Інкапсуляція дотримана:");
@@ -1313,6 +1321,7 @@ namespace GeometryApp
                 Console.WriteLine("  • Readonly властивості (ObjectId)");
                 Console.WriteLine("  • Контрольоване встановлення через методи");
                 Console.WriteLine("  • IDisposable для керування ресурсами");
+                Console.WriteLine("  • Перевірка IsDisposed для запобігання доступу до звільнених об'єктів");
             }
         }
     }
