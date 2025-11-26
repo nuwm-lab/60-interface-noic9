@@ -1,5 +1,6 @@
 using System;
-using System.Collections.Generic;
+using System. Collections.Generic;
+using System. Globalization;
 using System.Linq;
 
 namespace GeometryApp
@@ -90,18 +91,20 @@ namespace GeometryApp
     /// Інкапсулює спільну логіку та властивості
     /// Реалізує всі основні інтерфейси
     /// </summary>
-    public abstract class GeometricObject : 
-        IDistanceCalculable, 
-        IValidatable, 
+    public abstract class GeometricObject :
+        IDistanceCalculable,
+        IValidatable,
         ICoefficientsManageable,
         IGeometryCloneable,
-        IGeometryComparable
+        IGeometryComparable,
+        IDisposable
     {
         #region Захищені поля (інкапсуляція)
 
         protected const double EpsilonValue = 1e-10;
-        private static int _instanceCounter = 0; // Лічильник екземплярів
-        private readonly int _objectId; // Унікальний ID об'єкта
+        private static int _instanceCounter = 0;
+        private readonly int _objectId;
+        private bool _disposed = false;
 
         #endregion
 
@@ -119,7 +122,7 @@ namespace GeometryApp
 
         #endregion
 
-        #region Конструктори та деструктор
+        #region Конструктори та Dispose
 
         /// <summary>
         /// Конструктор базового класу
@@ -129,63 +132,74 @@ namespace GeometryApp
         {
             _instanceCounter++;
             _objectId = _instanceCounter;
-            
+
             Console.ForegroundColor = ConsoleColor. Cyan;
             Console.WriteLine($"[Конструктор] Створено {GetType().Name} #{_objectId}");
             Console.ResetColor();
         }
 
         /// <summary>
-        /// Деструктор (фіналізатор)
-        /// Викликається збирачем сміття перед знищенням об'єкта
+        /// Реалізація IDisposable для коректного звільнення ресурсів
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Захищений метод Dispose
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // Звільнення керованих ресурсів
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine($"[Dispose] Звільнено ресурси {GetType().Name} #{_objectId}");
+                    Console.ResetColor();
+                }
+
+                _disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Фіналізатор - викликається тільки якщо забули викликати Dispose
         /// </summary>
         ~GeometricObject()
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console. WriteLine($"[Деструктор] Знищено {GetType().Name} #{_objectId}");
-            Console.ResetColor();
+            if (! _disposed)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"[Фіналізатор] ПОПЕРЕДЖЕННЯ: {GetType().Name} #{_objectId} не був явно звільнений!");
+                Console.ResetColor();
+                Dispose(false);
+            }
         }
 
         #endregion
 
-        #region Абстрактні методи (повинні бути реалізовані в похідних класах)
+        #region Абстрактні методи
 
-        /// <summary>
-        /// Абстрактний метод для виведення інформації про об'єкт
-        /// </summary>
         public abstract void PrintInfo();
-
-        /// <summary>
-        /// Абстрактний метод для отримання розмірності простору об'єкта
-        /// </summary>
         public abstract int GetDimension();
-
-        /// <summary>
-        /// Абстрактний метод для отримання типу об'єкта
-        /// </summary>
         public abstract string GetObjectType();
 
         #endregion
 
         #region Реалізація інтерфейсів
 
-        // IDistanceCalculable
         public abstract bool ContainsPoint(params double[] point);
         public abstract double DistanceToPoint(params double[] point);
-
-        // IValidatable
         public abstract bool IsValid();
         public abstract string GetValidationMessage();
-
-        // ICoefficientsManageable
         public abstract void SetCoefficients(params double[] coefficients);
         public abstract double[] GetCoefficients();
         public abstract void PrintCoefficients();
-
-        // IGeometryCloneable
         public abstract GeometricObject Clone();
-
-        // IGeometryComparable
         public abstract bool IsSimilar(GeometricObject other);
 
         #endregion
@@ -239,30 +253,20 @@ namespace GeometryApp
 
         #endregion
 
-        #region Публічні властивості (контрольований доступ)
+        #region Публічні властивості
 
-        /// <summary>
-        /// Властивість для доступу до коефіцієнта a0 (вільний член)
-        /// Protected set - дозволяє зміну тільки в цьому класі та похідних
-        /// </summary>
         public double A0
         {
             get => _a0;
             protected set => _a0 = value;
         }
 
-        /// <summary>
-        /// Властивість для доступу до коефіцієнта a1 (коефіцієнт при x)
-        /// </summary>
         public double A1
         {
             get => _a1;
             protected set => _a1 = value;
         }
 
-        /// <summary>
-        /// Властивість для доступу до коефіцієнта a2 (коефіцієнт при y)
-        /// </summary>
         public double A2
         {
             get => _a2;
@@ -273,9 +277,6 @@ namespace GeometryApp
 
         #region Конструктори
 
-        /// <summary>
-        /// Конструктор за замовчуванням
-        /// </summary>
         public Pryama() : base()
         {
             _a0 = 0;
@@ -283,9 +284,6 @@ namespace GeometryApp
             _a2 = 0;
         }
 
-        /// <summary>
-        /// Конструктор з параметрами
-        /// </summary>
         public Pryama(double a0, double a1, double a2) : base()
         {
             _a0 = a0;
@@ -296,13 +294,10 @@ namespace GeometryApp
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"⚠ Попередження: {GetValidationMessage()}");
-                Console.ResetColor();
+                Console. ResetColor();
             }
         }
 
-        /// <summary>
-        /// Конструктор копіювання
-        /// </summary>
         public Pryama(Pryama other) : base()
         {
             if (other == null)
@@ -315,7 +310,7 @@ namespace GeometryApp
 
         #endregion
 
-        #region Реалізація абстрактних методів
+        #region Реалізація методів
 
         public override void SetCoefficients(params double[] coefficients)
         {
@@ -323,7 +318,7 @@ namespace GeometryApp
                 throw new ArgumentNullException(nameof(coefficients));
 
             if (coefficients.Length != 3)
-                throw new ArgumentException($"Для прямої потрібно 3 коефіцієнти. Надано: {coefficients.Length}");
+                throw new ArgumentException($"Для прямої потрібно 3 коефіцієнти.  Надано: {coefficients. Length}");
 
             A0 = coefficients[0];
             A1 = coefficients[1];
@@ -400,34 +395,50 @@ namespace GeometryApp
             return new Pryama(this);
         }
 
+        /// <summary>
+        /// Покращена логіка порівняння на подібність
+        /// Дві прямі подібні, якщо їх коефіцієнти пропорційні
+        /// </summary>
         public override bool IsSimilar(GeometricObject other)
         {
             if (other is Pryama pryama)
             {
-                // Дві прямі подібні, якщо їх коефіцієнти пропорційні
-                double ratio = 0;
-                bool ratioSet = false;
-
                 double[] thisCoeffs = GetCoefficients();
                 double[] otherCoeffs = pryama.GetCoefficients();
 
-                for (int i = 0; i < thisCoeffs.Length; i++)
+                // Знаходимо перший ненульовий коефіцієнт як базу
+                double ratio = 0;
+                bool ratioFound = false;
+
+                for (int i = 0; i < thisCoeffs. Length; i++)
                 {
-                    if (Math.Abs(thisCoeffs[i]) > EpsilonValue && Math.Abs(otherCoeffs[i]) > EpsilonValue)
+                    bool thisNonZero = Math.Abs(thisCoeffs[i]) > EpsilonValue;
+                    bool otherNonZero = Math.Abs(otherCoeffs[i]) > EpsilonValue;
+
+                    // Якщо один нульовий, а інший ні - не подібні
+                    if (thisNonZero != otherNonZero)
+                        return false;
+
+                    // Якщо обидва ненульові
+                    if (thisNonZero && otherNonZero)
                     {
                         double currentRatio = thisCoeffs[i] / otherCoeffs[i];
-                        if (! ratioSet)
+
+                        if (! ratioFound)
                         {
                             ratio = currentRatio;
-                            ratioSet = true;
+                            ratioFound = true;
                         }
-                        else if (Math.Abs(ratio - currentRatio) > EpsilonValue)
+                        else
                         {
-                            return false;
+                            // Перевіряємо чи співпадає пропорція
+                            if (Math.Abs(ratio - currentRatio) > EpsilonValue)
+                                return false;
                         }
                     }
                 }
-                return ratioSet;
+
+                return ratioFound;
             }
             return false;
         }
@@ -446,19 +457,17 @@ namespace GeometryApp
 
     /// <summary>
     /// Клас для гіперплощини у 4-вимірному просторі
-    /// Рівняння: a1*x1 + a2*x2 + a3*x3 + a4*x4 + a0 = 0
-    /// Наслідує Pryama та розширює до 4D
     /// </summary>
     public class Giperploschyna : Pryama
     {
-        #region Приватні поля (інкапсуляція)
+        #region Приватні поля
 
         private double _a3;
         private double _a4;
 
         #endregion
 
-        #region Публічні властивості
+        #region Властивості
 
         public double A3
         {
@@ -476,20 +485,13 @@ namespace GeometryApp
 
         #region Конструктори
 
-        /// <summary>
-        /// Конструктор за замовчуванням
-        /// Викликає конструктор базового класу
-        /// </summary>
         public Giperploschyna() : base()
         {
             _a3 = 0;
             _a4 = 0;
         }
 
-        /// <summary>
-        /// Конструктор з параметрами
-        /// </summary>
-        public Giperploschyna(double a0, double a1, double a2, double a3, double a4) 
+        public Giperploschyna(double a0, double a1, double a2, double a3, double a4)
             : base(a0, a1, a2)
         {
             _a3 = a3;
@@ -503,9 +505,6 @@ namespace GeometryApp
             }
         }
 
-        /// <summary>
-        /// Конструктор копіювання
-        /// </summary>
         public Giperploschyna(Giperploschyna other) : base(other)
         {
             if (other == null)
@@ -564,7 +563,7 @@ namespace GeometryApp
 
         public override double DistanceToPoint(params double[] point)
         {
-            if (! IsValid())
+            if (!IsValid())
                 throw new InvalidOperationException(GetValidationMessage());
 
             ValidatePointDimension(point, 4);
@@ -577,7 +576,7 @@ namespace GeometryApp
 
         public override bool IsValid()
         {
-            return Math. Abs(A1) > EpsilonValue || Math.Abs(A2) > EpsilonValue ||
+            return Math. Abs(A1) > EpsilonValue || Math. Abs(A2) > EpsilonValue ||
                    Math.Abs(A3) > EpsilonValue || Math.Abs(A4) > EpsilonValue;
         }
 
@@ -609,29 +608,38 @@ namespace GeometryApp
         {
             if (other is Giperploschyna giper)
             {
-                double ratio = 0;
-                bool ratioSet = false;
-
                 double[] thisCoeffs = GetCoefficients();
                 double[] otherCoeffs = giper.GetCoefficients();
 
+                double ratio = 0;
+                bool ratioFound = false;
+
                 for (int i = 0; i < thisCoeffs.Length; i++)
                 {
-                    if (Math.Abs(thisCoeffs[i]) > EpsilonValue && Math. Abs(otherCoeffs[i]) > EpsilonValue)
+                    bool thisNonZero = Math.Abs(thisCoeffs[i]) > EpsilonValue;
+                    bool otherNonZero = Math. Abs(otherCoeffs[i]) > EpsilonValue;
+
+                    if (thisNonZero != otherNonZero)
+                        return false;
+
+                    if (thisNonZero && otherNonZero)
                     {
                         double currentRatio = thisCoeffs[i] / otherCoeffs[i];
-                        if (!ratioSet)
+
+                        if (!ratioFound)
                         {
                             ratio = currentRatio;
-                            ratioSet = true;
+                            ratioFound = true;
                         }
-                        else if (Math.Abs(ratio - currentRatio) > EpsilonValue)
+                        else
                         {
-                            return false;
+                            if (Math.Abs(ratio - currentRatio) > EpsilonValue)
+                                return false;
                         }
                     }
                 }
-                return ratioSet;
+
+                return ratioFound;
             }
             return false;
         }
@@ -646,28 +654,246 @@ namespace GeometryApp
 
     #endregion
 
-    #region Менеджер геометрії
+    #region Тестування
 
     /// <summary>
-    /// Клас для управління колекцією геометричних об'єктів
-    /// Демонструє роботу з інтерфейсами та поліморфізм
+    /// Клас для автоматичного тестування
     /// </summary>
-    public class GeometryManager
+    public static class GeometryTests
+    {
+        public static void RunAllTests()
+        {
+            Console.WriteLine($"\n{UiConstants.BoxTop}");
+            Console.WriteLine("║                   ЮНІТ-ТЕСТИ                              ║");
+            Console.WriteLine($"{UiConstants.BoxBottom}\n");
+
+            int passed = 0;
+            int failed = 0;
+
+            // Тест 1: ContainsPoint для прямої
+            try
+            {
+                Pryama p = new Pryama(0, 1, 1); // x + y = 0
+                bool result = p.ContainsPoint(1, -1);
+                if (result)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("✓ Тест 1 PASSED: ContainsPoint для прямої");
+                    passed++;
+                }
+                else
+                {
+                    throw new Exception("Точка (1, -1) має належати прямій x + y = 0");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Тест 1 FAILED: {ex.Message}");
+                failed++;
+            }
+            finally
+            {
+                Console.ResetColor();
+            }
+
+            // Тест 2: DistanceToPoint для прямої
+            try
+            {
+                Pryama p = new Pryama(0, 1, 0); // x = 0 (вісь Y)
+                double distance = p.DistanceToPoint(5, 0);
+                if (Math.Abs(distance - 5) < 1e-10)
+                {
+                    Console. ForegroundColor = ConsoleColor.Green;
+                    Console. WriteLine("✓ Тест 2 PASSED: DistanceToPoint для прямої");
+                    passed++;
+                }
+                else
+                {
+                    throw new Exception($"Очікувана відстань 5, отримано {distance}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console. ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Тест 2 FAILED: {ex.Message}");
+                failed++;
+            }
+            finally
+            {
+                Console.ResetColor();
+            }
+
+            // Тест 3: IsSimilar для подібних прямих
+            try
+            {
+                Pryama p1 = new Pryama(1, 2, 3);
+                Pryama p2 = new Pryama(2, 4, 6); // Коефіцієнти * 2
+                if (p1.IsSimilar(p2))
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("✓ Тест 3 PASSED: IsSimilar для подібних прямих");
+                    passed++;
+                }
+                else
+                {
+                    throw new Exception("Прямі мають бути подібними");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console. WriteLine($"✗ Тест 3 FAILED: {ex.Message}");
+                failed++;
+            }
+            finally
+            {
+                Console.ResetColor();
+            }
+
+            // Тест 4: IsSimilar для неподібних прямих
+            try
+            {
+                Pryama p1 = new Pryama(1, 2, 3);
+                Pryama p2 = new Pryama(1, 1, 1);
+                if (!p1.IsSimilar(p2))
+                {
+                    Console.ForegroundColor = ConsoleColor. Green;
+                    Console.WriteLine("✓ Тест 4 PASSED: IsSimilar для неподібних прямих");
+                    passed++;
+                }
+                else
+                {
+                    throw new Exception("Прямі не повинні бути подібними");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Тест 4 FAILED: {ex.Message}");
+                failed++;
+            }
+            finally
+            {
+                Console.ResetColor();
+            }
+
+            // Тест 5: Крайовий випадок - нульові коефіцієнти
+            try
+            {
+                Pryama p1 = new Pryama(0, 1, 0); // x = 0
+                Pryama p2 = new Pryama(0, 2, 0); // x = 0 (подібна)
+                if (p1.IsSimilar(p2))
+                {
+                    Console.ForegroundColor = ConsoleColor. Green;
+                    Console.WriteLine("✓ Тест 5 PASSED: IsSimilar з нульовими коефіцієнтами");
+                    passed++;
+                }
+                else
+                {
+                    throw new Exception("Прямі з нульовими a0 та a2 мають бути подібними");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Тест 5 FAILED: {ex.Message}");
+                failed++;
+            }
+            finally
+            {
+                Console. ResetColor();
+            }
+
+            // Тест 6: ContainsPoint для гіперплощини
+            try
+            {
+                Giperploschyna g = new Giperploschyna(0, 1, 1, 1, 1); // x1 + x2 + x3 + x4 = 0
+                bool result = g.ContainsPoint(1, -1, 0, 0);
+                if (result)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("✓ Тест 6 PASSED: ContainsPoint для гіперплощини");
+                    passed++;
+                }
+                else
+                {
+                    throw new Exception("Точка має належати гіперплощині");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Тест 6 FAILED: {ex.Message}");
+                failed++;
+            }
+            finally
+            {
+                Console.ResetColor();
+            }
+
+            // Тест 7: Клонування
+            try
+            {
+                Pryama original = new Pryama(1, 2, 3);
+                Pryama clone = (Pryama)original.Clone();
+
+                if (clone.A0 == original.A0 && clone. A1 == original.A1 && clone.A2 == original.A2)
+                {
+                    original.SetCoefficients(10, 20, 30);
+                    if (clone.A0 == 1 && clone.A1 == 2 && clone.A2 == 3)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("✓ Тест 7 PASSED: Глибоке клонування");
+                        passed++;
+                    }
+                    else
+                    {
+                        throw new Exception("Клон змінився разом з оригіналом");
+                    }
+                }
+                else
+                {
+                    throw new Exception("Клон має інші значення");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"✗ Тест 7 FAILED: {ex.Message}");
+                failed++;
+            }
+            finally
+            {
+                Console.ResetColor();
+            }
+
+            // Підсумок
+            Console.WriteLine($"\n{UiConstants. Separator}");
+            Console.WriteLine($"Результати тестування:");
+            Console.ForegroundColor = ConsoleColor. Green;
+            Console.WriteLine($"  Пройдено: {passed}");
+            Console. ForegroundColor = ConsoleColor. Red;
+            Console.WriteLine($"  Провалено: {failed}");
+            Console.ResetColor();
+            Console.WriteLine($"  Загалом: {passed + failed}");
+        }
+    }
+
+    #endregion
+
+    #region Менеджер геометрії
+
+    public class GeometryManager : IDisposable
     {
         private List<GeometricObject> _objects;
+        private bool _disposed = false;
 
         public GeometryManager()
         {
             _objects = new List<GeometricObject>();
-            Console.ForegroundColor = ConsoleColor. Cyan;
+            Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("[Конструктор] Створено GeometryManager");
-            Console. ResetColor();
-        }
-
-        ~GeometryManager()
-        {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine($"[Деструктор] Знищено GeometryManager ({_objects.Count} об'єктів)");
             Console. ResetColor();
         }
 
@@ -708,10 +934,9 @@ namespace GeometryApp
 
             foreach (var obj in _objects)
             {
-                Console.WriteLine($"\n{UiConstants. Separator}");
+                Console.WriteLine($"\n{UiConstants.Separator}");
                 Console.WriteLine($"Об'єкт: {obj}\n");
 
-                // IValidatable
                 if (obj is IValidatable validatable)
                 {
                     Console.WriteLine($"📋 IValidatable:");
@@ -719,7 +944,6 @@ namespace GeometryApp
                     Console.WriteLine($"   Message: {validatable.GetValidationMessage()}");
                 }
 
-                // ICoefficientsManageable
                 if (obj is ICoefficientsManageable coeffManageable)
                 {
                     Console.WriteLine($"\n📊 ICoefficientsManageable:");
@@ -727,19 +951,18 @@ namespace GeometryApp
                     Console.WriteLine($"   Коефіцієнти: [{string.Join(", ", coeffs)}]");
                 }
 
-                // IDistanceCalculable - тестуємо з точкою
                 if (obj is IDistanceCalculable distCalculable)
                 {
                     Console.WriteLine($"\n📏 IDistanceCalculable:");
                     try
                     {
-                        double[] testPoint = obj.GetDimension() == 2 
-                            ? new double[] { 0, 0 } 
+                        double[] testPoint = obj.GetDimension() == 2
+                            ? new double[] { 0, 0 }
                             : new double[] { 0, 0, 0, 0 };
-                        
+
                         bool contains = distCalculable.ContainsPoint(testPoint);
                         double distance = distCalculable.DistanceToPoint(testPoint);
-                        
+
                         Console.WriteLine($"   Точка ({string.Join(", ", testPoint)}):");
                         Console.WriteLine($"   ContainsPoint(): {contains}");
                         Console.WriteLine($"   DistanceToPoint(): {distance:F6}");
@@ -750,38 +973,14 @@ namespace GeometryApp
                     }
                 }
 
-                // IGeometryCloneable
                 if (obj is IGeometryCloneable cloneable)
                 {
-                    Console. WriteLine($"\n🔄 IGeometryCloneable:");
+                    Console.WriteLine($"\n🔄 IGeometryCloneable:");
                     GeometricObject clone = cloneable.Clone();
                     Console. WriteLine($"   Оригінал: {obj}");
                     Console.WriteLine($"   Клон: {clone}");
-                    Console.WriteLine($"   Клон створено успішно!");
+                    Console. WriteLine($"   Клон створено успішно!");
                 }
-            }
-        }
-
-        public void DemonstrateComparison()
-        {
-            Console.WriteLine($"\n{UiConstants.BoxTop}");
-            Console.WriteLine("║         ДЕМОНСТРАЦІЯ ПОРІВНЯННЯ ОБ'ЄКТІВ                  ║");
-            Console.WriteLine($"{UiConstants.BoxBottom}\n");
-
-            // Створюємо подібні об'єкти
-            Pryama p1 = new Pryama(1, 2, 3);
-            Pryama p2 = new Pryama(2, 4, 6); // Подібна до p1 (коефіцієнти * 2)
-            Pryama p3 = new Pryama(1, 1, 1); // Не подібна
-
-            Console.WriteLine("Створено тестові об'єкти:");
-            Console.WriteLine($"p1: {p1}");
-            Console.WriteLine($"p2: {p2}");
-            Console.WriteLine($"p3: {p3}\n");
-
-            if (p1 is IGeometryComparable comp1)
-            {
-                Console.WriteLine($"p1. IsSimilar(p2): {comp1.IsSimilar(p2)} (очікується true - пропорційні коефіцієнти)");
-                Console.WriteLine($"p1. IsSimilar(p3): {comp1.IsSimilar(p3)} (очікується false)");
             }
         }
 
@@ -807,26 +1006,65 @@ namespace GeometryApp
                     bool belongs = obj.ContainsPoint(point);
                     double distance = obj.DistanceToPoint(point);
 
-                    Console.ForegroundColor = belongs ? ConsoleColor.Green : ConsoleColor.Yellow;
+                    Console.ForegroundColor = belongs ?  ConsoleColor.Green : ConsoleColor.Yellow;
                     Console.WriteLine($"{obj}: {(belongs ? "✓ НАЛЕЖИТЬ" : "✗ НЕ НАЛЕЖИТЬ")}");
                     Console.WriteLine($"  Відстань: {distance:F6}");
                     Console.ResetColor();
                 }
                 catch (Exception ex)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"{obj}: Помилка - {ex.Message}");
+                    Console. ForegroundColor = ConsoleColor.Red;
+                    Console. WriteLine($"{obj}: Помилка - {ex.Message}");
                     Console.ResetColor();
                 }
             }
         }
 
         public int GetObjectCount() => _objects.Count;
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine($"[Dispose] Звільнення ресурсів GeometryManager");
+
+                    // Явно звільняємо всі об'єкти
+                    foreach (var obj in _objects)
+                    {
+                        obj?. Dispose();
+                    }
+                    _objects.Clear();
+
+                    Console.ResetColor();
+                }
+                _disposed = true;
+            }
+        }
+
+        ~GeometryManager()
+        {
+            if (!_disposed)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"[Фіналізатор] ПОПЕРЕДЖЕННЯ: GeometryManager не був явно звільнений!");
+                Console.ResetColor();
+                Dispose(false);
+            }
+        }
     }
 
     #endregion
 
-    #region UI Константи
+    #region UI та Input
 
     public static class UiConstants
     {
@@ -837,10 +1075,6 @@ namespace GeometryApp
         public const string SectionBottom = "└─────────────────────────────────────────────────────────┘";
     }
 
-    #endregion
-
-    #region Input Helper
-
     public static class InputHelper
     {
         public static double ReadDouble(string prompt)
@@ -848,11 +1082,11 @@ namespace GeometryApp
             while (true)
             {
                 Console.Write(prompt);
-                if (double.TryParse(Console.ReadLine(), out double result))
+                if (double.TryParse(Console.ReadLine(), NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
                     return result;
 
                 Console.ForegroundColor = ConsoleColor. Red;
-                Console.WriteLine("❌ Помилка!  Введіть коректне число.");
+                Console.WriteLine("❌ Помилка!  Введіть коректне число (використовуйте крапку як роздільник).");
                 Console.ResetColor();
             }
         }
@@ -861,11 +1095,11 @@ namespace GeometryApp
         {
             while (true)
             {
-                Console.Write(prompt);
-                if (int.TryParse(Console.ReadLine(), out int result) && result >= minValue)
+                Console. Write(prompt);
+                if (int.TryParse(Console.ReadLine(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int result) && result >= minValue)
                     return result;
 
-                Console.ForegroundColor = ConsoleColor.Red;
+                Console. ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"❌ Помилка! Введіть коректне число (мінімум {minValue}).");
                 Console.ResetColor();
             }
@@ -931,76 +1165,60 @@ namespace GeometryApp
     {
         static void Main(string[] args)
         {
-            Console.OutputEncoding = System.Text. Encoding.UTF8;
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             PrintHeader();
 
+            // Спочатку запускаємо автоматичні тести
+            GeometryTests.RunAllTests();
+
             try
             {
-                GeometryManager manager = new GeometryManager();
+                using (GeometryManager manager = new GeometryManager())
+                {
+                    Console.WriteLine($"\n{UiConstants. SectionTop}");
+                    Console.WriteLine("│ ЕТАП 1: Створення об'єктів (Конструктори)               │");
+                    Console.WriteLine($"{UiConstants.SectionBottom}\n");
 
-                Console.WriteLine($"\n{UiConstants.SectionTop}");
-                Console.WriteLine("│ ЕТАП 1: Створення об'єктів (Конструктори)               │");
-                Console.WriteLine($"{UiConstants.SectionBottom}\n");
+                    CreateObjects(manager);
 
-                CreateObjects(manager);
+                    Console.WriteLine($"\n{UiConstants.SectionTop}");
+                    Console.WriteLine("│ ЕТАП 2: Демонстрація інтерфейсів                        │");
+                    Console.WriteLine($"{UiConstants.SectionBottom}");
 
-                Console. WriteLine($"\n{UiConstants.SectionTop}");
-                Console.WriteLine("│ ЕТАП 2: Демонстрація інтерфейсів                        │");
-                Console.WriteLine($"{UiConstants.SectionBottom}");
+                    manager.DemonstrateInterfaces();
 
-                manager.DemonstrateInterfaces();
+                    Console.WriteLine($"\n{UiConstants.SectionTop}");
+                    Console. WriteLine("│ ЕТАП 3: Перевірка точок                                  │");
+                    Console.WriteLine($"{UiConstants.SectionBottom}");
 
-                Console.WriteLine($"\n{UiConstants.SectionTop}");
-                Console.WriteLine("│ ЕТАП 3: Демонстрація порівняння (IGeometryComparable)   │");
-                Console.WriteLine($"{UiConstants.SectionBottom}");
+                    CheckPointsLoop(manager);
 
-                manager.DemonstrateComparison();
+                    Console. WriteLine($"\n{UiConstants.SectionTop}");
+                    Console.WriteLine("│ ЕТАП 4: Статистика                                       │");
+                    Console.WriteLine($"{UiConstants.SectionBottom}\n");
 
-                Console.WriteLine($"\n{UiConstants.SectionTop}");
-                Console.WriteLine("│ ЕТАП 4: Демонстрація клонування (IGeometryCloneable)    │");
-                Console.WriteLine($"{UiConstants.SectionBottom}\n");
+                    ShowStatistics(manager);
 
-                DemonstrateCloningAndEncapsulation();
+                    Console.WriteLine($"\n{UiConstants.SectionTop}");
+                    Console.WriteLine("│ ЕТАП 5: Демонстрація інкапсуляції                       │");
+                    Console.WriteLine($"{UiConstants.SectionBottom}\n");
 
-                Console.WriteLine($"\n{UiConstants.SectionTop}");
-                Console.WriteLine("│ ЕТАП 5: Перевірка точок                                  │");
-                Console.WriteLine($"{UiConstants.SectionBottom}");
-
-                CheckPointsLoop(manager);
-
-                Console.WriteLine($"\n{UiConstants. SectionTop}");
-                Console.WriteLine("│ ЕТАП 6: Статистика                                       │");
-                Console.WriteLine($"{UiConstants.SectionBottom}\n");
-
-                ShowStatistics(manager);
-
-                Console.WriteLine($"\n{UiConstants.SectionTop}");
-                Console.WriteLine("│ ЕТАП 7: Демонстрація інкапсуляції                       │");
-                Console.WriteLine($"{UiConstants.SectionBottom}\n");
-
-                DemonstrateEncapsulation();
+                    DemonstrateEncapsulation();
+                }
+                // using автоматично викличе Dispose для manager
             }
             catch (Exception ex)
             {
-                Console. ForegroundColor = ConsoleColor. Red;
-                Console.WriteLine($"\n❌ Критична помилка: {ex. Message}");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console. WriteLine($"\n❌ Критична помилка: {ex. Message}");
                 Console.WriteLine($"Деталі: {ex.StackTrace}");
                 Console.ResetColor();
             }
 
             PrintFooter();
 
-            // Демонстрація деструкторів
-            Console.WriteLine($"\n{UiConstants.SectionTop}");
-            Console. WriteLine("│ ЕТАП 8: Демонстрація деструкторів (GC)                  │");
-            Console.WriteLine($"{UiConstants.SectionBottom}\n");
-            
-            Console.WriteLine("Виклик збирача сміття.. .");
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
+            Console.WriteLine("\n[Натисніть будь-яку клавішу для виходу...]");
             Console.ReadKey();
         }
 
@@ -1016,23 +1234,27 @@ namespace GeometryApp
         static void PrintFooter()
         {
             Console.WriteLine($"\n{UiConstants.BoxTop}");
-            Console.WriteLine("║  Програма завершена.  Натисніть клавішу...                 ║");
+            Console.WriteLine("║  Програма завершена успішно!                              ║");
             Console.WriteLine(UiConstants.BoxBottom);
         }
 
         static void CreateObjects(GeometryManager manager)
         {
             Console.WriteLine("🔹 Створення Пряма (2D):");
-            GeometricObject pryama = new Pryama();
-            double[] coeffPryama = InputHelper.ReadCoefficients(3, "прямої");
-            pryama.SetCoefficients(coeffPryama);
-            manager.AddObject(pryama);
+            using (GeometricObject pryama = new Pryama())
+            {
+                double[] coeffPryama = InputHelper.ReadCoefficients(3, "прямої");
+                pryama.SetCoefficients(coeffPryama);
+                manager.AddObject(pryama);
+            }
 
-            Console. WriteLine("\n🔹 Створення Гіперплощина (4D):");
-            GeometricObject giper = new Giperploschyna();
-            double[] coeffGiper = InputHelper.ReadCoefficients(5, "гіперплощини");
-            giper.SetCoefficients(coeffGiper);
-            manager.AddObject(giper);
+            Console.WriteLine("\n🔹 Створення Гіперплощина (4D):");
+            using (GeometricObject giper = new Giperploschyna())
+            {
+                double[] coeffGiper = InputHelper.ReadCoefficients(5, "гіперплощини");
+                giper.SetCoefficients(coeffGiper);
+                manager.AddObject(giper);
+            }
         }
 
         static void CheckPointsLoop(GeometryManager manager)
@@ -1045,7 +1267,7 @@ namespace GeometryApp
                 Console.WriteLine($"Точка #{i + 1}:");
 
                 int dimension = InputHelper.ReadDimension("Розмірність (2 або 4): ");
-                double[] point = InputHelper. ReadPoint(dimension);
+                double[] point = InputHelper.ReadPoint(dimension);
                 manager.CheckPointForAll(point);
             }
         }
@@ -1063,55 +1285,35 @@ namespace GeometryApp
             Console.WriteLine($"   • IGeometryComparable");
         }
 
-        static void DemonstrateCloningAndEncapsulation()
-        {
-            Console.WriteLine("🔄 Клонування об'єктів:\n");
-
-            Pryama original = new Pryama(1, 2, 3);
-            Console.WriteLine($"Оригінал: {original}");
-
-            // Клонування через інтерфейс
-            IGeometryCloneable cloneable = original;
-            GeometricObject clone = cloneable.Clone();
-            
-            Console.WriteLine($"Клон: {clone}");
-            Console.WriteLine($"\nПеревірка незалежності:");
-            
-            // Змінюємо оригінал
-            original.SetCoefficients(10, 20, 30);
-            Console.WriteLine($"Після зміни оригіналу:");
-            Console.WriteLine($"  Оригінал: {original}");
-            Console.WriteLine($"  Клон: {clone}");
-            Console.WriteLine($"  ✓ Клон залишився незмінним (глибоке копіювання)");
-        }
-
         static void DemonstrateEncapsulation()
         {
             Console.WriteLine("🔒 Демонстрація інкапсуляції:\n");
 
-            Pryama p = new Pryama(1, 2, 3);
+            using (Pryama p = new Pryama(1, 2, 3))
+            {
+                Console.WriteLine("1. Доступ до даних через властивості (get):");
+                Console.WriteLine($"   A0 = {p.A0}");
+                Console.WriteLine($"   A1 = {p. A1}");
+                Console. WriteLine($"   A2 = {p.A2}");
 
-            Console.WriteLine("1. Доступ до даних через властивості (get):");
-            Console.WriteLine($"   A0 = {p.A0}");
-            Console.WriteLine($"   A1 = {p.A1}");
-            Console.WriteLine($"   A2 = {p.A2}");
+                Console.WriteLine("\n2.  Зміна даних тільки через SetCoefficients:");
+                Console.WriteLine("   (Прямий доступ p.A0 = 10 заборонений - protected set)");
+                p.SetCoefficients(10, 20, 30);
+                Console. WriteLine($"   Після SetCoefficients: {p}");
 
-            Console.WriteLine("\n2.  Зміна даних тільки через SetCoefficients:");
-            Console.WriteLine("   (Прямий доступ p.A0 = 10 заборонений - protected set)");
-            p.SetCoefficients(10, 20, 30);
-            Console.WriteLine($"   Після SetCoefficients: {p}");
+                Console.WriteLine("\n3. Readonly властивість ObjectId:");
+                Console.WriteLine($"   ObjectId = {p.ObjectId} (тільки для читання)");
 
-            Console.WriteLine("\n3. Readonly властивість ObjectId:");
-            Console.WriteLine($"   ObjectId = {p.ObjectId} (тільки для читання)");
+                Console.WriteLine("\n4. Static властивість TotalInstancesCreated:");
+                Console.WriteLine($"   Всього створено: {GeometricObject.TotalInstancesCreated}");
 
-            Console.WriteLine("\n4. Static властивість TotalInstancesCreated:");
-            Console.WriteLine($"   Всього створено: {GeometricObject.TotalInstancesCreated}");
-
-            Console.WriteLine("\n✓ Інкапсуляція дотримана:");
-            Console.WriteLine("  • Приватні поля (_a0, _a1, _a2)");
-            Console.WriteLine("  • Публічні властивості з protected set");
-            Console.WriteLine("  • Readonly властивості (ObjectId)");
-            Console.WriteLine("  • Контрольоване встановлення через методи");
+                Console.WriteLine("\n✓ Інкапсуляція дотримана:");
+                Console.WriteLine("  • Приватні поля (_a0, _a1, _a2)");
+                Console.WriteLine("  • Публічні властивості з protected set");
+                Console.WriteLine("  • Readonly властивості (ObjectId)");
+                Console.WriteLine("  • Контрольоване встановлення через методи");
+                Console.WriteLine("  • IDisposable для керування ресурсами");
+            }
         }
     }
 
